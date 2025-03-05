@@ -89,4 +89,57 @@ const getAllBanner = async (req, res) => {
       );
   }
 };
-module.exports = { createbanner, getAllBanner };
+
+const updateBanner = async (req, res) => {
+  try {
+    const { bannerId, title } = req.body;
+    if (!bannerId) {
+      return res
+        .status(400)
+        .json(new apiError(false, "Banner ID is required", 400, null));
+    }
+
+    const banner = await bannerModel.findById(bannerId);
+    if (!banner) {
+      return res
+        .status(404)
+        .json(new apiError(false, "Banner not found", 404, null));
+    }
+
+    let updatedFields = {};
+
+    if (title) {
+      updatedFields.title = title;
+    }
+
+    if (req.files && req.files.image) {
+      // Delete old image from Cloudinary
+      const publicId = banner.image.split("/").pop().split(".")[0];
+      await deleteCloudinaryImage(publicId);
+
+      // Upload new image
+      const { secure_url } = await uploadImageCloudinary(
+        req.files.image[0].path
+      );
+      updatedFields.image = secure_url;
+    }
+
+    // Update the banner in database
+    const updatedBanner = await bannerModel.findByIdAndUpdate(
+      bannerId,
+      { $set: updatedFields },
+      { new: true }
+    );
+
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(true, "Banner updated successfully", 200, updatedBanner)
+      );
+  } catch (error) {
+    return res
+      .status(500)
+      .json(new apiError(false, `Error updating banner: ${error}`, 500, null));
+  }
+};
+module.exports = { createbanner, getAllBanner, updateBanner };
