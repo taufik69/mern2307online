@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Textarea,
   Input,
@@ -11,10 +11,31 @@ import {
   DialogFooter,
   Select,
   Option,
+  useSelect,
 } from "@material-tailwind/react";
+import {
+  exclusiveApi,
+  useGetCategoryQuery,
+  useGetsubCategoryQuery,
+} from "../../Features/api/exclusive.api";
+import axios from "axios";
+import { ToastSucess } from "../../Utils/Toast";
+import { useDispatch } from "react-redux";
 const Subcategory = () => {
+  const dispatch = useDispatch();
+  const {
+    data,
+    isLoading: catrgoryloading,
+    isError: categorydataError,
+  } = useGetCategoryQuery();
+  const {
+    data: subcategoryData,
+    isLoading,
+    isError,
+  } = useGetsubCategoryQuery();
+
   const [open, setOpen] = React.useState(false);
-  const TABLE_HEAD = [" Name", "Category", "Date", "Actions"];
+  const TABLE_HEAD = ["Name", "Category", "Date", "Actions"];
   const TABLE_ROWS = [
     {
       name: "John Michael",
@@ -68,21 +89,86 @@ const Subcategory = () => {
     },
   ];
   const handleOpen = () => setOpen(!open);
+  const [subcategoryinfo, setsubcategoryinfo] = useState({
+    name: "",
+    category: "",
+  });
+  const [loading, setloading] = useState(false);
+  // onchange handeler
+  const handleonchange = (event) => {
+    if (typeof event === "string") {
+      // This means it's from the <Select> component
+      setsubcategoryinfo((prev) => ({
+        ...prev,
+        category: event, // Directly use the value
+      }));
+    } else {
+      // Regular input field
+      const { id, value } = event.target;
+      setsubcategoryinfo((prev) => ({
+        ...prev,
+        [id]: value,
+      }));
+    }
+  };
+
+  // handleCreateSubcategory
+  const handleCreateSubcategory = async () => {
+    try {
+      setloading(true);
+      const response = await axios.post(
+        "http://localhost:4000/api/v1/subcategory",
+        {
+          name: subcategoryinfo.name,
+          category: subcategoryinfo.category,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      if (response.statusText == "OK") {
+        ToastSucess("Subcategory create sucessfull");
+        dispatch(exclusiveApi.util.invalidateTags(["subcategory"]));
+      }
+    } catch (error) {
+      console.log("error form handleCreateSubcategory futnion ", error);
+    } finally {
+      setloading(false);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-y-5">
-      <Input size="md" label="SubCategory Name" color="black" />
-      <Select color="purple" label="Select Category">
-        <Option>Material Tailwind HTML</Option>
-        <Option>Material Tailwind React</Option>
-        <Option>Material Tailwind Vue</Option>
-        <Option>Material Tailwind Angular</Option>
-        <Option>Material Tailwind Svelte</Option>
-      </Select>
+      <Input
+        size="md"
+        id="name"
+        label="SubCategory Name"
+        color="black"
+        onChange={handleonchange}
+      />
+      {catrgoryloading == false && (
+        <Select
+          color="purple"
+          label="Select Category"
+          id="category"
+          onChange={handleonchange}
+        >
+          {data?.data.map((item) => (
+            <Option value={item._id} key={item._id}>
+              {item.name}
+            </Option>
+          ))}
+        </Select>
+      )}
+
       <Button
+        onClick={handleCreateSubcategory}
         variant="filled"
         color="green"
-        loading={false}
-        className="w-[10%]"
+        loading={loading}
+        className="w-[25%]"
       >
         Create
       </Button>
@@ -109,52 +195,54 @@ const Subcategory = () => {
             </tr>
           </thead>
           <tbody>
-            {TABLE_ROWS.map(({ name, job, date }, index) => {
-              const isLast = index === TABLE_ROWS.length - 1;
-              const classes = isLast
-                ? "p-4"
-                : "p-4 border-b border-blue-gray-50 text-center";
+            {subcategoryData?.data?.map(
+              ({ name, category, createdAt }, index) => {
+                const isLast = index === subcategoryData?.data.length - 1;
+                const classes = isLast
+                  ? "p-4"
+                  : "p-4 border-b border-blue-gray-50 text-center";
 
-              return (
-                <tr key={name}>
-                  <td className={classes}>
-                    <Typography
-                      variant="small"
-                      color="blue-gray"
-                      className="font-normal"
-                    >
-                      {name}
-                    </Typography>
-                  </td>
-                  <td className={classes}>
-                    <Typography
-                      variant="small"
-                      color="blue-gray"
-                      className="font-normal"
-                    >
-                      {job}
-                    </Typography>
-                  </td>
-                  <td className={classes}>
-                    <Typography
-                      variant="small"
-                      color="blue-gray"
-                      className="font-normal"
-                    >
-                      {date}
-                    </Typography>
-                  </td>
-                  <td className={classes}>
-                    <div className="flex items-center gap-x-3 justify-center">
-                      <Button color="red">Delete</Button>
-                      <Button color="green" onClick={handleOpen}>
-                        Edit
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
+                return (
+                  <tr key={name}>
+                    <td className={classes}>
+                      <Typography
+                        variant="small"
+                        color="blue-gray"
+                        className="font-normal"
+                      >
+                        {name}
+                      </Typography>
+                    </td>
+                    <td className={classes}>
+                      <Typography
+                        variant="small"
+                        color="blue-gray"
+                        className="font-normal"
+                      >
+                        {category.name}
+                      </Typography>
+                    </td>
+                    <td className={classes}>
+                      <Typography
+                        variant="small"
+                        color="blue-gray"
+                        className="font-normal"
+                      >
+                        {createdAt}
+                      </Typography>
+                    </td>
+                    <td className={classes}>
+                      <div className="flex items-center gap-x-3 justify-center">
+                        <Button color="red">Delete</Button>
+                        <Button color="green" onClick={handleOpen}>
+                          Edit
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              }
+            )}
           </tbody>
         </table>
       </Card>

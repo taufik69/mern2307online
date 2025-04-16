@@ -8,16 +8,21 @@ import {
   DialogFooter,
 } from "@material-tailwind/react";
 import React, { useState } from "react";
-
+import axios from "axios";
 import { useForm } from "react-hook-form";
 import {
+  useDeleteBannerMutation,
   useGetAllBannerQuery,
+  useUpdateBannerMutation,
   useUploadBannerMutation,
 } from "../../Features/api/exclusive.api";
+import { exclusiveApi } from "../../Features/api/exclusive.api";
 import { ToastError, ToastSucess } from "../../Utils/Toast";
+import { useDispatch } from "react-redux";
 const TABLE_HEAD = ["Title", "Image", "Actions"];
 
 const Banner = () => {
+  const dispatch = useDispatch();
   const {
     register,
     handleSubmit,
@@ -25,16 +30,18 @@ const Banner = () => {
     formState: { errors },
   } = useForm();
   const [open, setOpen] = React.useState(false);
+
   const [tempdata, settempdata] = useState({});
-  const [updateData, setUpdatData] = useState({
-    title: "",
-    image: "",
-  });
+
   const handleOpen = (obj) => {
     settempdata(obj);
     setOpen(!open);
   };
+
+  const [DeleteBanner, { isLoading: delelteLoading }] =
+    useDeleteBannerMutation();
   const [uploadBanner, { isLoading, isError }] = useUploadBannerMutation();
+
   const {
     data,
     isError: bannerError,
@@ -60,20 +67,72 @@ const Banner = () => {
 
   // onchange handler
   const handlechange = (event) => {
-    const { name, value } = event.target;
-    if (name == "image") {
-      setUpdatData({
-        ...tempdata,
-        image: event.target.files,
-      });
-    }
-    setUpdatData({
-      ...tempdata,
-      [name]: value,
+    const { name, value, files } = event.target;
+
+    settempdata((prevData) => ({
+      ...prevData,
+      [name]: name === "image" ? files[0] : value, // Store `File` object correctly
+    }));
+  };
+
+  // handleRemoveTitle
+  const handleRemoveTitle = () => {
+    settempdata((prev) => {
+      return {
+        ...prev,
+        title: "",
+      };
     });
   };
-  console.log(updateData.image);
 
+  // handleUpdateBanner
+  const handleUpdateBanner = async () => {
+    try {
+      if (!tempdata._id) {
+        ToastError("Invalid banner data");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("bannerId", tempdata._id);
+
+      if (tempdata.title) {
+        formData.append("title", tempdata.title);
+      }
+
+      if (tempdata.image instanceof File) {
+        formData.append("image", tempdata.image);
+      }
+
+      const response = await axios.put(
+        "http://localhost:4000/api/v1/banner",
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      );
+
+      if (response?.data) {
+        // 🔄 Invalidate banner cache to trigger a refetch
+        dispatch(exclusiveApi.util.invalidateTags(["banner"]));
+        ToastSucess("Banner Updated Successfully");
+        setOpen(false);
+      } else {
+        throw new Error("Update failed");
+      }
+    } catch (error) {
+      ToastError("Failed to update banner");
+      console.warn("Error from handleUpdateBanner:", error);
+    }
+  };
+
+  // handleDelteBanner
+  const handleDelteBanner = async (id) => {
+    try {
+      const response = await DeleteBanner(id).unwrap();
+      console.log(response);
+    } catch (error) {
+      console.log("error from handledelte funtion", error);
+    }
+  };
   return (
     <div className="flex flex-col gap-y-5">
       <form
@@ -198,7 +257,13 @@ const Banner = () => {
 
                     <td className={classes}>
                       <div className="flex items-center gap-x-3 justify-center">
-                        <Button color="red">Delete</Button>
+                        <Button
+                          color="red"
+                          loading={delelteLoading}
+                          onClick={() => handleDelteBanner(_id)}
+                        >
+                          Delete
+                        </Button>
                         <Button
                           color="green"
                           onClick={() => handleOpen({ title, image, _id })}
@@ -225,23 +290,37 @@ const Banner = () => {
         <DialogBody className="flex flex-col gap-y-5">
           <Input
             size="md"
-            label="Banner Title"
+            label=" Title"
             color="black"
             name="title"
-            onChange={handlechange}
             value={tempdata.title}
+            onChange={handlechange}
+            onClick={handleRemoveTitle}
           />
           <div class="flex items-center justify-center w-full">
             <div className="w-full h-full">
               {tempdata.image && (
-                <img src={tempdata?.image} alt={tempdata?.image} />
+                <img
+                  src={
+                    tempdata.image instanceof File
+                      ? URL.createObjectURL(tempdata.image)
+                      : tempdata.image
+                  }
+                  alt="Selected Banner"
+                  className="w-full h-auto rounded-lg shadow-md"
+                />
               )}
             </div>
             <label
-              for="dropzone-file"
+              for="dropzone-file2"
               class="flex flex-col items-center justify-center w-full h-64 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50  dark:bg-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:hover:border-gray-500 dark:hover:bg-gray-600"
             >
-              <input type="file" name="image" onChange={handlechange} />
+              <input
+                type="file"
+                id="dropzone-file2"
+                name="image"
+                onChange={handlechange}
+              />
             </label>
           </div>
         </DialogBody>
@@ -254,8 +333,8 @@ const Banner = () => {
           >
             <span>Cancel</span>
           </Button>
-          <Button variant="gradient" color="green">
-            <span>Confirm</span>
+          <Button variant="gradient" color="green" onClick={handleUpdateBanner}>
+            <span>Update</span>
           </Button>
         </DialogFooter>
       </Dialog>

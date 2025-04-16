@@ -129,7 +129,9 @@ const deleteCategory = async (req, res) => {
 const getsingleCategory = async (req, res) => {
   try {
     const { id } = req.params;
-    const singleCategory = await categoryModel.findById(id);
+    const singleCategory = await categoryModel
+      .findById(id)
+      .populate("subcategory");
     if (!singleCategory) {
       return res
         .status(401)

@@ -4,9 +4,9 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 export const exclusiveApi = createApi({
   reducerPath: "exclusive",
   baseQuery: fetchBaseQuery({
-    baseUrl: import.meta.env.VITE_BASE_URL || "http://localhost:4000/api/v1/",
+    baseUrl: import.meta.env.VITE_BASE_URL,
   }),
-  tagTypes: ["banner"],
+  tagTypes: ["banner", "category", "subcategory", "product"],
   endpoints: (builder) => ({
     getAllBanner: builder.query({
       query: () => "banner",
@@ -20,7 +20,62 @@ export const exclusiveApi = createApi({
       }),
       invalidatesTags: ["banner"],
     }),
+    DeleteBanner: builder.mutation({
+      query: (id) => ({
+        url: `banner/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["banner"],
+    }),
+    createCategory: builder.mutation({
+      query: (fromdata) => {
+        return {
+          url: `category`,
+          method: "POST",
+          data: fromdata,
+          formData: true,
+        };
+      },
+      invalidatesTags: ["category"],
+    }),
+
+    getCategory: builder.query({
+      query: () => "category",
+      providesTags: ["category"],
+    }),
+
+    getsubCategory: builder.query({
+      query: () => "subcategory",
+      providesTags: ["subcategory"],
+    }),
+    getsingleCategory: builder.query({
+      query: (id) => `category/${id}`,
+      providesTags: ["category"],
+    }),
+    GetAllproduct: builder.query({
+      query: () => `product`,
+      providesTags: ["product"],
+    }),
+    GetallOrder: builder.query({
+      query: () => `allorder`,
+    }),
+
+    GetSingleOrder: builder.query({
+      query: (id) => `order/${id}`,
+    }),
   }),
 });
 
-export const { useGetAllBannerQuery, useUploadBannerMutation } = exclusiveApi;
+export const {
+  useGetSingleOrderQuery,
+  useGetallOrderQuery,
+  useGetAllproductQuery,
+  useGetsubCategoryQuery,
+  useGetsingleCategoryQuery,
+  useCreatesubCategoryMutation,
+  useGetCategoryQuery,
+  useDeleteBannerMutation,
+  useGetAllBannerQuery,
+  useUploadBannerMutation,
+  useUpdateBannerMutation,
+} = exclusiveApi;

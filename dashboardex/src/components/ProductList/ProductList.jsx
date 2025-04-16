@@ -14,6 +14,7 @@ import {
 } from "@material-tailwind/react";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
+import { useGetAllproductQuery } from "../../Features/api/exclusive.api";
 const ProductList = () => {
   const [open, setOpen] = React.useState(false);
   const [value, setValue] = useState("");
@@ -49,6 +50,11 @@ const ProductList = () => {
   ];
 
   const handleOpen = () => setOpen(!open);
+
+  // fetch all product
+  const { data, isLoading, isError } = useGetAllproductQuery();
+  console.log(data?.data);
+
   return (
     <div>
       {/* category list */}
@@ -73,25 +79,25 @@ const ProductList = () => {
             </tr>
           </thead>
           <tbody>
-            {TABLE_ROWS.map(
+            {data?.data.map(
               (
-                { Name, Description, price, image, Category, SubCategory },
+                { name, description, price, image, category, subCategory },
                 index
               ) => {
-                const isLast = index === TABLE_ROWS.length - 1;
+                const isLast = index === data?.data.length - 1;
                 const classes = isLast
                   ? "p-4"
                   : "p-4 border-b border-blue-gray-50 text-center";
 
                 return (
-                  <tr key={Name}>
+                  <tr key={name}>
                     <td className={classes}>
                       <Typography
                         variant="small"
                         color="blue-gray"
                         className="font-normal"
                       >
-                        {Name}
+                        {name}
                       </Typography>
                     </td>
                     <td className={classes}>
@@ -99,9 +105,8 @@ const ProductList = () => {
                         variant="small"
                         color="blue-gray"
                         className="font-normal"
-                      >
-                        {Description}
-                      </Typography>
+                        dangerouslySetInnerHTML={{ __html: description }}
+                      />
                     </td>
                     <td className={classes}>
                       <Typography
@@ -119,7 +124,11 @@ const ProductList = () => {
                         color="blue-gray"
                         className="font-normal"
                       >
-                        <img src={image} alt="Missing" />
+                        <img
+                          src={image}
+                          alt="Missing"
+                          className="w-[100px] h-[100px] rounded object-contain"
+                        />
                       </Typography>
                     </td>
 
@@ -129,7 +138,7 @@ const ProductList = () => {
                         color="blue-gray"
                         className="font-normal"
                       >
-                        {Category}
+                        {category.name}
                       </Typography>
                     </td>
                     <td className={classes}>
@@ -138,7 +147,7 @@ const ProductList = () => {
                         color="blue-gray"
                         className="font-normal"
                       >
-                        {SubCategory}
+                        {subCategory.name}
                       </Typography>
                     </td>
                     <td className={classes}>

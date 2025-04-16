@@ -132,4 +132,70 @@ const placeorder = async (req, res) => {
   }
 };
 
-module.exports = { placeorder };
+// make me a get all order controller
+const getAllOrder = async (req, res) => {
+  try {
+    const orders = await ordermodel
+      .find({})
+
+      .populate({
+        path: "cartItem",
+        populate: {
+          path: "product",
+        },
+      });
+    if (!orders) {
+      return res
+        .status(501)
+        .json(new apiError(false, "Order not found", 501, null));
+    }
+    return res
+      .status(200)
+      .json(new ApiResponse(true, "Order found", 200, orders));
+  } catch (error) {
+    return res
+      .status(500)
+      .json(
+        new apiError(
+          false,
+          `Error from get all order controller ${error}`,
+          501,
+          null
+        )
+      );
+  }
+};
+
+// get single order controller
+const getSingleOrder = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const order = await ordermodel.findById(id).populate({
+      path: "cartItem",
+      populate: {
+        path: "product",
+      },
+    });
+    if (!order) {
+      return res
+        .status(501)
+        .json(new apiError(false, "Order not found", 501, null));
+    }
+    return res
+      .status(200)
+      .json(new ApiResponse(true, "Order found", 200, order));
+  } catch (error) {
+    return res
+      .status(500)
+      .json(
+        new apiError(
+          false,
+          `Error from get single order controller ${error}`,
+          501,
+          null
+        )
+      );
+  }
+};
+
+module.exports = { placeorder, getAllOrder, getSingleOrder };

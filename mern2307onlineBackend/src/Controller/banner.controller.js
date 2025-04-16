@@ -1,7 +1,10 @@
 const { ApiResponse } = require("../Utils/Apiresponse");
 const { apiError } = require("../Utils/ApiErrorResponse");
 const bannerModel = require("../Model/banner.model");
-const { uploadImageCloudinary } = require("../helpers/cloudinary");
+const {
+  uploadImageCloudinary,
+  deleteCloudinaryImage,
+} = require("../helpers/cloudinary");
 
 // create banner controller
 const createbanner = async (req, res) => {
@@ -93,6 +96,7 @@ const getAllBanner = async (req, res) => {
 const updateBanner = async (req, res) => {
   try {
     const { bannerId, title } = req.body;
+
     if (!bannerId) {
       return res
         .status(400)
@@ -115,6 +119,7 @@ const updateBanner = async (req, res) => {
     if (req.files && req.files.image) {
       // Delete old image from Cloudinary
       const publicId = banner.image.split("/").pop().split(".")[0];
+
       await deleteCloudinaryImage(publicId);
 
       // Upload new image
@@ -142,4 +147,53 @@ const updateBanner = async (req, res) => {
       .json(new apiError(false, `Error updating banner: ${error}`, 500, null));
   }
 };
-module.exports = { createbanner, getAllBanner, updateBanner };
+
+// delte banner
+
+const deleteBanner = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Check if ID is provided
+    if (!id) {
+      return res
+        .status(400)
+        .json(new apiError(false, "Banner ID is required", 400, null));
+    }
+
+    // Find the banner
+    const banner = await bannerModel.findById(id);
+    if (!banner) {
+      return res
+        .status(404)
+        .json(new apiError(false, "Banner not found", 404, null));
+    }
+
+    // Optional: Delete the image from Cloudinary if necessary
+    const imageUrl = banner.image;
+    if (imageUrl) {
+      const publicId = imageUrl.split("/").pop().split(".")[0]; // Extract public ID
+      await deleteCloudinaryImage(publicId); // Call a function to delete from Cloudinary
+    }
+
+    // Delete the banner from database
+    await bannerModel.findByIdAndDelete(id);
+
+    return res
+      .status(200)
+      .json(new ApiResponse(true, "Banner deleted successfully", 200, null));
+  } catch (error) {
+    return res
+      .status(500)
+      .json(
+        new apiError(
+          false,
+          `Error from deleteBanner controller: ${error}`,
+          500,
+          null
+        )
+      );
+  }
+};
+
+module.exports = { createbanner, getAllBanner, updateBanner, deleteBanner };

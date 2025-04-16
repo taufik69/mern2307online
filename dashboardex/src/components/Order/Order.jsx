@@ -1,7 +1,17 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { useGetallOrderQuery } from "../../Features/api/exclusive.api";
 
 const Order = () => {
+  const { data, isLoading, isError } = useGetallOrderQuery();
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (isError) {
+    return <div>Error...</div>;
+  }
+
   return (
     <div>
       <div class="bg-white py-8 antialiased dark:bg-gray-900 md:py-16 font-sans font-semibold">
@@ -60,7 +70,7 @@ const Order = () => {
 
             <div class="mt-6 flow-root sm:mt-8 h-[75vh] overflow-y-scroll">
               <div class="divide-y divide-gray-200 dark:divide-gray-700">
-                {[...Array(10)].map((_, index) => (
+                {data?.data?.map((item) => (
                   <div class="flex flex-wrap items-center gap-y-4 py-6 mr-10">
                     <dl class="w-1/2 sm:w-1/4 lg:w-auto lg:flex-1">
                       <dt class="text-base font-medium text-gray-500 dark:text-gray-400">
@@ -68,7 +78,7 @@ const Order = () => {
                       </dt>
                       <dd class="mt-1.5 text-base font-semibold text-gray-900 dark:text-white">
                         <a href="#" class="hover:underline">
-                          #FWB125467980
+                          # {item._id}
                         </a>
                       </dd>
                     </dl>
@@ -78,16 +88,20 @@ const Order = () => {
                         Date:
                       </dt>
                       <dd class="mt-1.5 text-base font-semibold text-gray-900 dark:text-white">
-                        11.12.2023
+                        {new Date().toLocaleDateString("en-US", {
+                          year: "numeric",
+                          month: "2-digit",
+                          day: "2-digit",
+                        })}
                       </dd>
                     </dl>
 
                     <dl class="w-1/2 sm:w-1/4 lg:w-auto lg:flex-1">
                       <dt class="text-base font-medium text-gray-500 dark:text-gray-400">
-                        Price:
+                        TotalPrice:
                       </dt>
                       <dd class="mt-1.5 text-base font-semibold text-gray-900 dark:text-white">
-                        $499
+                        ${item.totalPrice}
                       </dd>
                     </dl>
 
@@ -113,7 +127,7 @@ const Order = () => {
                             d="M13 7h6l2 4m-8-4v8m0-8V6a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v9h2m8 0H9m4 0h2m4 0h2v-4m0 0h-5m3.5 5.5a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0Zm-10 0a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0Z"
                           />
                         </svg>
-                        In transit
+                        {item.status}
                       </dd>
                     </dl>
 
@@ -125,7 +139,8 @@ const Order = () => {
                         Cancel order
                       </button>
                       <Link
-                        to={"/order/1"}
+                        to={"/order/" + item._id}
+                        type="button"
                         class="w-full inline-flex justify-center rounded-lg  border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-900 hover:bg-gray-100 hover:text-primary-700 focus:z-10 focus:outline-none focus:ring-4 focus:ring-gray-100 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white dark:focus:ring-gray-700 lg:w-auto"
                       >
                         View details

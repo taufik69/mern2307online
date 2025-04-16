@@ -6,6 +6,7 @@ const { apiError } = require("../Utils/ApiErrorResponse");
 const createSubCategory = async (req, res) => {
   try {
     const { name, category } = req.body;
+
     if (!name || !category) {
       return res
         .status(501)
@@ -223,5 +224,5 @@ module.exports = {
   getAllSubCategory,
   singleSubCategory,
   updateSubCategory,
-  delteSubCategory
+  delteSubCategory,
 };
